@@ -1,0 +1,188 @@
+---
+title: "R Tutorial"
+author: Nicole Black
+date: 07/16/22
+---
+
+```{r setup}
+    knitr::opts_knit$set(root.dir = normalizePath("/PATH/TO/DIRECTORY")) 
+```
+
+Answer the following questions to the best of your ability. DO NOT use loops in your implementation (it isn't necessary for any of these questions). If you have questions, be sure to reach out to Nicole/TAs via GitHub issues, or attend office hours! We're always are happy to help!
+
+Finally, if you get stuck, here are some common mistakes to check for:
+
+  1. Forgetting to put quotes around a string (or vise versa)
+  2. Missing an open or close parenthesis
+  3. Calling a function on an argument of the wrong data type
+  4. Overwriting your data and wondering why downstream code doesn't work (this is why we recommend you make a copy of your original data frame and only edit that copy)
+  5. General typos, spelling errors, misplaced punctuation, etc.
+  
+Download the data sets we will be using in this homework: 
+
+```{r}
+data(attenu) # peak earthquake accelerations measured at various observation sites
+data(iris) # various measurements for flowers of different species
+```
+
+###### (1) Boolean Masking
+
+Use is.na() to identify any rows with missing $station data (recall that the dollar sign refers to columns!) in the attenu data set. Save the output of your is.na() statement to a vector called "na_boolean_mask", then print it to view it.
+
+```{r}
+na_boolean_mask <- (is.na(attenu$station))
+
+```
+
+Use the sum() function on na_boolean_mask. What does this number represent? Remember this value for later (you can save it in a variable if you would like).
+
+```{r}
+num_missing_data <- sum(na_boolean_mask)
+```
+
+Remember that boolean values are TRUEs and FALSEs. A boolean mask is a vector of boolean values that can be applied to a data frame within the df[row, column] notation. If you apply the mask in the row section df[mask , ] then R will go through all of the rows of your data frame and check if the corresponding value in the boolean mask vector is a TRUE or a FALSE. TRUE rows are selected, and FALSE rows are ignored. The syntax is as follows:
+
+```{r}
+mask <- c(TRUE, TRUE, FALSE, FALSE, TRUE)
+
+df_cleaned <- df[mask, ] # with above mask placed in the rows section here, the cleaned data frame will contain all of the data for rows 1, 2, and 5
+```
+
+Copy the above syntax to create a new data frame called "attenu_cleaned".
+
+THINK: When using is.na(), are NA values assigned TRUE or FALSE? With this information in mind, what does TRUE mean in your 'na_boolean_mask' vector? Is that data we want to keep, or data we want to ignore. 
+
+```{r}
+# write code here
+
+attenu_cleaned <- attenu[!na_boolean_mask, ]
+```
+
+View your attenu_cleaned data frame to confirm you have cleaned it as intended. There should be no NA values in the station column.
+
+```{r}
+# write code here
+
+attenu_cleaned <- attenu[!na_boolean_mask, ]
+```
+
+Use the function nrow() to count the number of rows in attenu and attenu_cleaned. Given the number of TRUEs and FALSEs in na_boolean_mask, do these values make sense? What is the relationship between these numbers?
+
+```{r}
+# write code here
+nrow(attenu)
+nrow(attenu_cleaned)
+```
+
+###### (2) Plotting
+
+There are many types of plots in R, each with many types of customizations. Here we will create a boxplot, histogram, scatterplot, and Draftsman's or Pairs Scatter Plots. The associated functions are boxplot(), hist(), plot(), and pairs(). We will use the iris data set for all below plotting.
+
+Create a boxplot that splits the sepal length data into groups by species. For help with boxplot(), call ?boxplot or google the function!
+
+```{r}
+# write code here
+boxplot(iris$Sepal.Length~iris$Species)
+```
+
+Create a histogram of petal length.
+
+```{r}
+# write code here
+hist(iris$Petal.Length)
+```
+
+Choose any two columns from the iris data set. Create a scatterplot that compares these columns, color coded based on the values relative to the column means. Follow these steps to create your plot:
+
+  1. Identify the mean of the x-axis data and the y-axis data.
+  2. Use a series of nested ifelse() statements to create a vector called colors. (HINT: In a nested ifelse(), the "else" condition is to run another ifelse(), and so on. Make sure to close the nest with the correct number of parentheses!) This vector should hold four colors. Assign a color (ex: "blue", "magenta", etc.) to each of the following scenarios:
+    a. x is greater than the x column mean and y is greater than the y column mean
+    b. x is greater than the x column mean but y is less than the y column mean
+    c. x is less than the x column mean and y is less than the y column mean
+    d. x is less than the x column mean but y is greater than the y column mean
+  3. Convert the colors vector into a factor.
+  4. Print the correlation between x and y by using print(cor.test(x data, y data))
+  4. Use plot() to plot x and y, colored using the color vector (now a factor). Use abline() to plot a vertical line at the x-axis mean a horizontal line at the y-axis mean. For more info on plotting with plot() and abline(), use "?plot" and "?abline".
+  
+Note: If you write multiple plotting lines, they will all show up on top of each other on the same plot. This can be useful at times (like in the situation above, where we want plot() and abline() to be on the same graph). If you want to create a separate plot, use "dev.off()" to clear the window and start fresh.
+
+```{r}
+# write code here
+x_mean = mean(iris$Sepal.Width)
+y_mean = mean(iris$Petal.Width)
+color = c()
+color = ifelse(iris$Sepal.Width > x_mean & iris$Petal.Width > y_mean, "blue", ifelse(iris$Sepal.Width > x_mean & iris$Petal.Width < y_mean, "green", ifelse(iris$Sepal.Width < x_mean & iris$Petal.Width < y_mean, "red", "yellow")))
+color_factor = as.factor(color)
+plot(iris$Sepal.Width, iris$Petal.Width, col = color_factor)
+abline(v = x_mean, h = y_mean)
+```
+
+
+Create a Draftsman's or Pairs Scatter Plot that looks at the sepal length, sepal width, petal length, and petal width colored by the species. You can play around with various other arguments to make this plot as readable as possible. (HINT: Google how to color by factor with the "col" argument)
+
+```{r}
+# write code here
+pairs(iris, col = color_factor)
+```
+
+The Draftsman's plot above is interesting since it looks like using these four measurements, a fairly accurate species prediction can be made! This is an example of a cluster analysis, and you can use a plot like this one later on to explore cancer predictors.
+
+###### (3) Writing files/saving plots
+
+Often, we want to save results data frames to a local machine so they can be saved, shared, or further explored with other software. To do this, we have to "write" the file using write.csv() as follows:
+
+```{r}
+write.csv(attenu_cleaned, "/Users/joshuagabbay/Desktop/QBIO/qbio_490_joshuagabbay/attenu_cleaned.csv") # in R, file paths are strings so don't forget the quotes!
+```
+
+Save the attenu_cleaned to your desktop, then view it from your GUI.
+
+```{r}
+# write code here
+
+```
+
+Along with writing files, we oftentimes want to read files into our R environment. These files could be previously saved result files, raw data, etc. We read in csv files using read.csv() as follows:
+
+```{r}
+df <- read.csv("/Users/joshuagabbay/Desktop/QBIO/qbio_490_joshuagabbay/attenu_cleaned.csv", header = TRUE)
+```
+
+The header (boolean value) tells R whether the file contains the names of the variables as the first line.
+
+Read in your attenu_cleaned file to a data frame called attenu_read_in. We won't use attenu_cleaned again so you can delete it from your desktop once it is successfully read into R.
+
+```{r}
+# write code here
+
+attenu_read_in = read.csv("/Users/joshuagabbay/Desktop/QBIO/qbio_490_joshuagabbay/attenu_cleaned.csv", header = TRUE)
+```
+
+We also oftentimes want to save our plots. You can do this as follows:
+
+```{r}
+jpeg("/Users/joshuagabbay/Desktop/QBIO/qbio_490_joshuagabbay/plot.jpg") # choose any file extension, typically jpg and pdf are most common
+plot(iris$Sepal.Width, iris$Petal.Width) # put all of your plotting lines here
+abline(h  = 1)
+dev.off() # close the plotting environment and save the plot
+```
+
+Adapt your histogram plot to be saved to your desktop.
+
+```{r}
+# write code here
+jpeg("/Users/joshuagabbay/Desktop/QBIO/qbio_490_joshuagabbay/histogram.jpg")
+hist(iris$Sepal.Width)
+dev.off()
+```
+
+###### (4) Looking Ahead
+
+In our next class, we will be using the BiocManager and TCGAbiolinks packages. Go ahead and run the following lines to install and load those packages if you haven't already (it might take a while!)
+
+If it asks "Update all/some/none? [a/s/n]:" type "a"
+If it asks "Do you want to install from sources the package which needs compilation (Yes/no/cancel)" type "Yes
+
+```{r}
+a
+
