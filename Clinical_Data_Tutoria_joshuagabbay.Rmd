@@ -59,9 +59,9 @@ Create a column in "clinical" called "age_category" with the values "young" and 
 
 ```{r}
 # write code here
-for (i in clinical$age_at_initial_pathologic_diagnosis){
-  ifelse(clinical$age_at_initial_pathologic_diagnosis[i] < 50, clinical$age_category[i] <- "young", clinical$age_category[i] <- "old")
-}
+
+clinical$age_category <- ifelse(clinical$age_at_initial_pathologic_diagnosis < 50, clinical$age_category <- "young", clinical$age_category <- "old")
+
 ```
 
 Now, let's say we want to create a new clinical data frame with only young patients. How can we do that?
@@ -71,12 +71,10 @@ Remember Boolean masking from R_Tutorial.Rmd? In that notebook, we created a boo
 Create a boolean vector using an ifelse() statement where young patients (< 50) are TRUE, and old patients (>= 50) are FALSE.
 
 ```{r}
-str(clinical)
-head(clinical)
-rownames(clinical)
-for (i in clinical$age_category){
-  age_mask <- ifelse(clinical$age_category == "young", TRUE, FALSE)
-}# write code here
+
+
+  age_mask <- ifelse(clinical$age_at_initial_pathologic_diagnosis < 50, TRUE, FALSE)
+# write code here
 ```
 
 Call the sum function on age_mask. Remember that TRUEs are treated as 1, and FALSEs are treated as 0. Knowing this, what will your sum represent?
@@ -153,7 +151,7 @@ Let's create a column in clinical called survival_time. For some patients, we ca
 # write code here 
 # HINT: use ifelse() and is.na()
 
-  ifelse(is.na(clinical$days_to_death), clinical$survival_time <- clinical$days_to_last_followup, clinical$survival_time <- clinical$days_to_death)
+clinical$survival_time <- ifelse(is.na(clinical$days_to_death), clinical$survival_time <- clinical$days_to_last_followup, clinical$survival_time <- clinical$days_to_death)
 
 ```
 
@@ -161,7 +159,8 @@ Next, create the death_event column. This column will store a boolean variable t
 
 ```{r}
 # write code here
-ifelse(is.na(clinical$days_to_death), clinical$death_event <- FALSE, clinical$death_event <- TRUE)
+
+clinical$death_event <- ifelse(clinical$vital_status == "Alive", clinical$death_event <- FALSE, clinical$death_event <- TRUE)
 ```
 
 Now we can perform our analysis! Read the Help info for each function, then fill in the blanks with the columns you created (age_category, survival_time, death_event).
@@ -169,14 +168,13 @@ Now we can perform our analysis! Read the Help info for each function, then fill
 ```{r}
 # Initialize a 'survival' object, which contains the data we need.
 ?Surv
-surv_object_age <- Surv(time = FILL_IN_HERE,
-                    event = FILL_IN_HERE)
+surv_object_age <- Surv(time = clinical$survival_time,
+                    event = clinical$death_event)
 
 # Create a fit object
 # When writing formulas (x ~ y), x is what's being plotted and y is what is grouping x into categories
-?surv_fit
-age_fit <- surv_fit( surv_object ~ FILL_IN_HERE,
-                     data = clinical )
+age_fit <- survfit(surv_object_age ~ clinical$age_category,
+                     data = clinical)
 
 # the ggtheme and legend arguments are for formatting. 
 # Feel free to play around with the margins and legend placement
@@ -197,7 +195,7 @@ KM_plot_age = survplot_age$plot +
 KM_plot_age
 ```
 
-Take a moment to look at your plot and try to understand what it is saying. Write some observations/key takeaways below:
+Take a moment to look at your plot and try to understand what it is saying. Write some observations/key takeaways below: Old and young people have similar rates of survival in the early days of diagnosis. As time goes on, younger people more often pass away earlier in their prognosis.
 
 ###### (4) Saving files
 
@@ -210,7 +208,7 @@ Remember, you can use write.csv() to save a data frame to a .csv file, and you c
 ```{r}
 # change the file path! make sure it's in your week4 folder
 # we set row.names to false since the first row doesn't contain row name info
-write.csv(clinical, "/PATH/TO/DESTINATION/brca_clinical_data.csv", row.names = FALSE)
+write.csv(clinical, "/Users/joshuagabbay/Desktop/QBIO/qbio_490_joshuagabbay/brca_clinical_data.csv", row.names = FALSE)
 ```
 
 
