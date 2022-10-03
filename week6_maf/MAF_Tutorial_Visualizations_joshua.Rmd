@@ -1,0 +1,128 @@
+---
+title: "MAF Tutorial - Visualizations"
+author: Nicole Black
+date: 08/03/22
+---
+
+###### (1) Set Up
+
+Set your working environment to analysis_data:
+
+```{r setup}
+    knitr::opts_knit$set(root.dir = normalizePath("/PATH/TO/analysis_data")) 
+```
+
+Install and load the ggplot2 package:
+
+```{r}
+
+```
+
+Load in the maftools and TCGAbiolinks package:
+
+```{r}
+# write code here
+```
+
+Load in your saved MAF data by reading in your clinical data, re-preparing maf_query, and then calling read.maf(). See Intro_to_MAF.Rmd if you need help.
+
+```{r}
+# write code here
+clinical <- read.csv("/PATH/TO/week4_clinical/brca_clinical_data.csv")
+
+maf <- GDCprepare(maf_query) # as long as it runs, ignore any errors
+
+maf_object <- read.maf(maf = FILL IN HERE, 
+                       clinicalData = FILL IN HERE,
+                       isTCGA = TRUE)
+```
+
+###### (2) Oncoplots
+
+We are going to start off by making our first MAF figure using the oncoplot() function. The each column on an oncoplot represents an individual patient, and the rows represent the genes of interest. The different colors represent the different types of mutations where grey represents no mutation in that gene for that patient.
+
+Generate an oncoplot by filling in the maf argument below. Fill in the top argument with various integer arguments (e.g. 5, 10, 20, etc.) to see the genes that are mutated in the most patients. Save your plot to your week6_maf folder.
+
+```{r}
+oncoplot(maf = FILL IN HERE,
+         top = FILL IN HERE) 
+
+ggsave("PATH/TO/week6_maf/filename.png")
+```
+
+Pick one of the top 10 mutated genes and Google it! What is the function of this gene? Remember, at a basic level, cancer is uncontrolled cell growth. Does your gene relate to cell growth and proliferation (division)? If so, how?
+
+You can also create an oncoplot for specific genes of your choosing by passing a vector into oncoplot genes argument. Pick 5 genes to plot. Hint: the genes argument accepts a vector of strings.
+
+```{r}
+oncoplot(maf = FILL IN HERE,
+         genes = FILL IN HERE)
+```
+
+What other questions might you ask based on the oncoplots created above (think about types of mutations, specific genes, specific pathways, mutual exclusivity of mutations, etc.)? Brainstorm two research questions:
+
+1.
+2.
+
+###### (3) Adding Clinical Annotations
+
+We can further customize our oncoplots by adding clinical data in the form of an annotation. Let's practice this by adding age_category to our oncoplot.
+
+```{r}
+oncoplot(maf = FILL IN HERE,
+         top = 10,
+         clinicalFeatures = "age_category")
+```
+
+Do you see any clustering between old and young patients?
+
+###### (4) subsetMaf + CoOncoplots
+
+Another way to compare between patient populations is to use a coOncoplot. Before we create our coOncoplot, we first need to subset our maf_object dataframe into two separate data frames, one for old patients and one for young patients.
+
+We can do this with subsetMaf(). The subsetMaf(maf, tsb) function needs two arguments in this case: maf is the original MAF object, and tsb is a vector of patient IDs (barcodes) to select.
+
+Store the young patient barcodes in a vector called young_patient_barcodes. Hint: you can use boolean masking for this!
+
+```{r}
+young_patient_barcodes <- 
+```
+
+Use the young_patient_barcode vector in the tsb argument of subsetMaf.
+
+```{r}
+young_maf <- subsetMaf(maf = FILL IN HERE,
+                       tsb = FILL IN HERE)
+```
+
+Create an old_patient_barcode vector and use that to subset just the old patient data.
+
+```{r}
+old_patient_barcodes <- 
+  
+old_maf <- 
+```
+
+Use coOncoplot() to draw two oncoplots side by side, comparing young vs. old patients. m1 is the first MAF object to plot, and m2 is the second. Be sure to provide descriptive names in the m1Name and m2Name arguments! Again, save the plot using the ggsave() function.
+
+```{r}
+coOncoplot(m1 = FILL IN HERE, 
+           m2 = FILL IN HERE, 
+           m1Name = FILL IN HERE, 
+           m2Name = FILL IN HERE)
+
+ggsave("PATH/TO/week6_maf/filename.png")
+```
+
+Are there any genes that seem to be mutated at different rates between the two populations? If so, pick one. Can you think of any reasons why that gene might be mutated more in younger/older patients (Google it!)
+
+Chosen Gene:
+More highly mutated in young or old population: 
+Hypothesized Reason:
+
+###### (6) Looking Ahead
+
+In this homework we covered a few of the visualization plots maftools offers, but there are many many more available to us!
+
+Next class we'll cover a few more visualizations before moving into analysis plots.
+

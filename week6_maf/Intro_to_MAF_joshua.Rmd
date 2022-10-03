@@ -1,0 +1,167 @@
+---
+title: "Intro to MAF"
+author: Nicole Black
+date: 07/31/22
+---
+
+###### (1) Set Up
+
+```{r setup}
+    knitr::opts_knit$set(root.dir = normalizePath("/Users/joshuagabbay/Desktop/QBIO/qbio_490_joshuagabbay/analysis_data")) 
+```
+
+```{r}
+# install and load maftools and TCGAbiolinks
+
+if(!require("BiocManager", quietly = TRUE)){
+  install.packages("BiocManager")
+}
+BiocManager::install("maftools")
+library(maftools)
+
+if(!require(TCGAbiolinks)){
+  install.packages("TCGAbiolinks")
+}
+
+library(TCGAbiolinks)
+```
+
+Before we get into MAF, we need to read in the clinical data (created in week 4) so it can be merged with our MAF data later on.
+
+```{r Exercise 1.1}
+clinical <- read.csv("/Users/joshuagabbay/Desktop/QBIO/qbio_490_joshuagabbay/analysis_data/brca_clinical_data.csv")
+```
+
+We also need to change the bcr_patient_barcode column name that way the MAF package can read our clinical file.
+
+```{r Exercise 1.2}
+colnames(clinical)[ colnames(clinical) == "bcr_patient_barcode" ] <- "Tumor_Sample_Barcode"
+```
+
+After changing the column name, re-save the clinical data frame to your computer.
+
+```{r}
+# change the file path! make sure it's in your week4 folder
+write.csv(clinical, "/Users/joshuagabbay/Desktop/QBIO/qbio_490_joshuagabbay/analysis_data/brca_clinical_data.csv", row.names = FALSE)
+```
+
+###### (2) MAF Package
+
+Now, we can query in the MAF files using GDCquery()/GDCdownload()/GDCprepare() and read.maf(). 
+
+```{r Exercise 2.1}
+maf_query <- GDCquery(
+    project = "TCGA-BRCA", 
+    data.category = "Simple Nucleotide Variation", 
+    access = "open", # we only have access to somatic mutations which are open access
+    data.type = "Masked Somatic Mutation", 
+    workflow.type = "Aliquot Ensemble Somatic Variant Merging and Masking"
+)
+GDCdownload(maf_query)
+maf <- GDCprepare(maf_query) # as long as it runs, ignore any errors
+
+maf_object <- read.maf(maf = maf, 
+                       clinicalData = clinical,
+                       isTCGA = TRUE)
+```
+
+###### (3) Exploring the MAF Object
+
+Call str() on maf_object.
+
+```{r Exercise 3.1}
+# write code here
+str(maf_object)
+```
+
+Notice the @ and $ signs. What do each of them represent?
+
+  @ represents: the data frame you are in
+  $ represents: the column you are in
+  
+List all of the data frames within the maf_object by typing maf_object@ then either waiting for a popup, or if no popup appears, by hitting tab.
+
+```{r Exercise 3.2}
+# write code here
+maf_object@
+```
+
+Call head() and str() on the @data df and the @clinical.data df. These will be the main data frames we use in our MAF analysis.
+
+```{r Exercise 3.3}
+# write code here
+head(maf_object@data)
+str(maf_object@data)
+head(maf_object@clinical.data)
+str(maf_object@clinical.data)
+```
+
+View the first 110 items in Tumor_Sample_Barcode from @data and @clinical.data.
+
+```{r Exercise 3.4}
+# write code here
+maf_object@data$Tumor_Sample_Barcode[1:110]
+maf_object@clinical.data$Tumor_Sample_Barcode[1:110]
+```
+
+What do you notice about these two lists?
+
+The first one is basically the same entry for the first 110 entries, while the second list is almost completely unique entries each time.
+
+View the Tumor_Sample_Barcode column and the HGVSp_Short column for all TP53 mutations (i.e. Hugo_Symbol == "TP53"). Hint: boolean masking!
+
+```{r Exercise 3.5}
+# write code here
+mask <- maf_object@data$Hugo_Symbol == "TP53"
+maf_object@data$Tumor_Sample_Barcode[mask]
+maf_object@data$HGVSp_Short[mask]
+```
+
+Call head() on the Amino_acids column in @data.
+
+```{r Exercise 3.6}
+# write code here
+head(maf_object@data$Amino_acids)
+```
+
+What mutation could cause a S/R change?
+
+G/U -> C/A in third spot
+
+What about an A/T change?
+
+GCU -> ACU
+
+Call head() on the HGVSp_Short column in @data.
+
+```{r Exercise 3.7}
+# write code here
+head(maf_object@data$HGVSp_Short)
+```
+
+What does p.P728Afs*11 mean? (Do some google-ing!)
+
+
+```{r Exercise 3.8}
+# use this code block for the following questions:
+nrow(maf_object@data)
+ncol(maf_object@data)
+typeof(maf_object@data$Tumor_Sample_Barcode)
+```
+  
+  How many rows/columns are there in @data?
+  
+  67254, 141
+  
+  What type of data is stored in the rows? What about the columns?
+  
+  list, integer
+  
+  How many levels are there in Tumor_Sample_Barcode (from @data)?
+  Are there duplicate values in Tumor_Sample_Barcode?
+  
+  How many unique values are there in Amino_acids?
+  Are there duplicate values in Amino_acids?
+  
+  How many unique values are there in HGVSp_Short?
+  Are there duplicate values in HGVSp_Short?

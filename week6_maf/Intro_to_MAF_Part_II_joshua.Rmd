@@ -1,0 +1,172 @@
+---
+title: "Intro to MAF - Part II"
+author: Nicole Black
+date: 9/27/22
+---
+
+###### (1) Set Up
+
+Set your path:
+
+```{r setup}
+    knitr::opts_knit$set(root.dir = normalizePath("/PATH/TO/analysis_data")) 
+```
+
+Load in necessary packages:
+
+```{r}
+# load maftools
+```
+
+Read in the clinical data.
+
+```{r Exercise 1.1}
+clinical <- read.csv("/PATH/TO/brca_clinical_data.csv")
+```
+
+Read in your maf object.
+
+```{r Exercise 1.2}
+maf_object <- read.maf(maf = FILL IN HERE, 
+                       clinicalData = FILL IN HERE,
+                       isTCGA = TRUE)
+```
+
+###### (2) Fisher's Exact Test - Demo
+
+Rewrite the vital_status and breast_carcinoma_estrogen_receptor_status columns of your clinical df as factors.
+
+```{r}
+clinical$vital_status <- FILL IN HERE
+
+clinical$breast_carcinoma_estrogen_receptor_status <- FILL IN HERE
+```
+
+Create a contingency table using table().
+
+```{r}
+contig <- table(FILL IN HERE)
+```
+
+Visualize our contingency table using a mosaic plot.
+
+```{r}
+mosaicplot(FILL IN HERE)
+```
+
+Run our Fisher's exact test.
+
+```{r}
+fisher_test <- fisher.test(FILL IN HERE)
+```
+
+View the results of our test.
+
+```{r}
+fisher_test
+
+fisher_test$p.value
+```
+
+What does this p-value tell us?
+
+Does this make sense given the biology of cancer?
+
+###### (3) Mutational Co-Occurence Example
+
+Subset your maf_object to create geneA_maf and geneB_maf.
+
+```{r}
+## half class do: TP53 + PIK3CA
+## other half do: MUC16 + RYR2
+
+geneA_maf <- subsetMaf(maf = FILL IN HERE,
+                       genes = FILL IN HERE) ## fill in with your gene name as a string
+
+geneB_maf <- subsetMaf(maf = FILL IN HERE,
+                       genes = FILL IN HERE)
+```
+
+Now let's start to build our contingency table.
+
+Access the barcodes of the patients with mutations in genes A and the barcodes of the patinets with mutations in gene B. HINT: Boolean indexing! How do we access patient barcodes within the MAF object without duplicate patients? @data or @clinical.data?
+
+```{r}
+mut_pats_geneA = FILL IN HERE
+mut_pats_geneB = FILL IN HERE
+```
+
+Get the lengths of these two vectors.
+
+```{r}
+num_pats_geneA = length(FILL IN HERE)
+num_pats_geneB = FILL IN HERE
+```
+
+Use intersect() to get the patients with mutations in both gene A AND gene B. Then find the length of that vector. What does this tell us in our contingency table?
+
+```{r}
+mut_pats_geneAB = intersect(FILL IN HERE)
+num_AB = length(FILL IN HERE)
+```
+
+Now, determine the number of patients with one mutation and not the other. HINT: Do some subtraction with your above vectors.
+
+```{r}
+num_A_only = FILL IN HERE
+num_B_only = FILL IN HERE
+```
+
+Finally, find the number of patients without either mutation. HINT: We know the total number of patients (based on our original maf_object), and we just calculated the number of patients with mutations (A only + B only + AB).
+
+```{r}
+num_neither = FILL IN HERE
+```
+
+Create your contingency table:
+
+```{r}
+contig <- matrix(c(num_AB, 
+                         num_B_only,
+                         num_A_only,
+                         num_neither), 
+                       nrow=2)
+
+# view the contingency table
+contig
+
+# view the contingency table as a mosaic
+mosaicplot(contig)
+```
+
+Run your Fisher exact test!
+
+```{r}
+fisher_test <- fisher.test(FILL IN HERE)
+fisher_test
+```
+
+Are your mutations co-occurent or mutually exclusive?
+
+###### (4) Maftools somaticInteractions()
+
+Luckily, we don't have to do the above work by hand for each gene pair we want to look at because maftools has a function that does it for us!
+
+Run somaticInteractions for your above genes by passing in a vector with your gene names into the genes argument.
+
+```{r}
+somaticInteractions(maf = FILL IN HERE,
+                    genes = FILL IN HERE,
+                    pvalue = c(0.05, 0.1)) ## these are the default p-value significance levels
+```
+
+Run the following line of code for the top 25 genes.
+
+```{r}
+somaticInteractions(maf = FILL IN HERE,
+                    top = FILL IN HERE,
+                    pvalue = c(0.05, 0.1))
+```
+
+Pick a gene pair that is either significantly co-occurant or significantly mutually exclusive and look up the genes! Does this make sense? Do you see any literature that expresses similar/oppositional views on these genes?
+

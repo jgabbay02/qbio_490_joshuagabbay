@@ -1,0 +1,222 @@
+---
+title: "Intro to MAF - Part II (ANSWER KEY)"
+author: Nicole Black
+date: 9/27/22
+---
+
+###### (1) Set Up
+
+Set your path:
+
+```{r setup}
+    knitr::opts_knit$set(root.dir = normalizePath("/Users/nicoleblack/Desktop/QBIO/qbio490_nicole/analysis_data/"))
+```
+
+Load in necessary packages:
+
+```{r}
+# load maftools
+library(TCGAbiolinks)
+library(maftools)
+```
+
+Read in the clinical data.
+
+```{r Exercise 1.1}
+clinical <- read.csv("/Users/nicoleblack/Desktop/QBIO/qbio490_nicole/analysis_data/brca_clinical_data.csv")
+```
+
+Read in your maf object.
+
+```{r Exercise 1.2}
+maf_query <- GDCquery(
+    project = "TCGA-BRCA", 
+    data.category = "Simple Nucleotide Variation", 
+    access = "open", # we only have access to somatic mutations which are open access
+    data.type = "Masked Somatic Mutation", 
+    workflow.type = "Aliquot Ensemble Somatic Variant Merging and Masking"
+)
+GDCdownload(maf_query) ## only run this if you haven't already!! (if you know you've run it but are still getting an issue, check your working directory file path and the file path for where you saved GDCdata)
+maf <- GDCprepare(maf_query)
+maf_object <- read.maf(maf = maf, 
+                       clinicalData = clinical, ## make sure you changed the name of "bcr_patient_barcode" to "Tumor_Sample_Barcode" (see exercise 1.2 of Intro_to_MAF.Rmd)
+                       isTCGA = TRUE)
+```
+
+###### (2) Fisher's Exact Test - Demo
+
+Rewrite the vital_status and breast_carcinoma_estrogen_receptor_status columns of your clinical df as factors.
+
+```{r}
+clinical$vital_status <- factor(clinical$vital_status)
+
+clinical$breast_carcinoma_estrogen_receptor_status <- factor(clinical$breast_carcinoma_estrogen_receptor_status, levels = c("Positive", "Negative"))
+```
+
+Create a contingency table using table().
+
+```{r}
+contig <- table(clinical$breast_carcinoma_estrogen_receptor_status, clinical$vital_status)
+```
+
+Visualize our contingency table using a mosaic plot.
+
+```{r}
+mosaicplot(contig)
+```
+
+Run our Fisher's exact test.
+
+```{r}
+fisher_test <- fisher.test(contig)
+```
+
+View the results of our test.
+
+```{r}
+fisher_test
+
+fisher_test$p.value
+```
+
+What does this p-value tell us? The factors we are comparing (vital status and ER receptor status) are linked in some way!
+
+Does this make sense given the biology of cancer? Yes, ER+ breast cancer has a better prognosis than ER- breast cancer. (In general, recepter+ cancer has a better prognosis, and triple negative, ie ER-, PR-, HER-, has the worst prognosis)
+
+###### (3) Mutational Co-Occurence Example
+
+Subset your maf_object to create geneA_maf and geneB_maf.
+
+```{r}
+## half class do: TP53 + PIK3CA
+## other half do: MUC16 + RYR2
+
+TP53_maf <- subsetMaf(maf = maf_object,
+                       genes = "TP53") ## fill in with your gene name as a string
+
+PIK3CA_maf <- subsetMaf(maf = maf_object,
+                       genes = "PIK3CA")
+
+MUC16_maf <- subsetMaf(maf = maf_object,
+                       genes = "MUC16") ## fill in with your gene name as a string
+
+RYR2_maf <- subsetMaf(maf = maf_object,
+                       genes = "RYR2")
+```
+
+Now let's start to build our contingency table.
+
+Access the barcodes of the patients with mutations in genes A and the barcodes of the patinets with mutations in gene B. HINT: Boolean indexing! How do we access patient barcodes within the MAF object without duplicate patients? @data or @clinical.data?
+
+```{r}
+mut_pats_TP53 = TP53_maf@clinical.data$Tumor_Sample_Barcode
+mut_pats_PIK3CA = PIK3CA_maf@clinical.data$Tumor_Sample_Barcode
+
+mut_pats_MUC16 = MUC16_maf@clinical.data$Tumor_Sample_Barcode
+mut_pats_RYR2 = RYR2_maf@clinical.data$Tumor_Sample_Barcode
+```
+
+Get the lengths of these two vectors.
+
+```{r}
+num_pats_TP53 = length(mut_pats_TP53)
+num_pats_PIK3CA = length(mut_pats_PIK3CA)
+
+num_pats_MUC16 = length(mut_pats_MUC16)
+num_pats_RYR2 = length(mut_pats_RYR2)
+```
+
+Use intersect() to get the patients with mutations in both gene A AND gene B. Then find the length of that vector. What does this tell us in our contingency table?
+
+```{r}
+mut_pats_both_ex1 = intersect(mut_pats_TP53, mut_pats_PIK3CA)
+num_both_ex1 = length(mut_pats_both_ex1)
+
+mut_pats_both_ex2 = intersect(mut_pats_MUC16, mut_pats_RYR2)
+num_both_ex2 = length(mut_pats_both_ex2)
+```
+
+Now, determine the number of patients with one mutation and not the other. HINT: Do some subtraction with your above vectors.
+
+```{r}
+num_TP53_only = num_pats_TP53 - num_both_ex1
+num_PIK3CA_only = num_pats_PIK3CA - num_both_ex1
+
+num_MUC16_only = num_pats_MUC16 - num_both_ex2
+num_RYR2_only = num_pats_RYR2 - num_both_ex2
+```
+
+Finally, find the number of patients without either mutation. HINT: We know the total number of patients (based on our original maf_object), and we just calculated the number of patients with mutations (A only + B only + AB).
+
+```{r}
+num_neither_ex1 = length(maf_object@clinical.data$Tumor_Sample_Barcode) - num_TP53_only - num_PIK3CA_only - num_both_ex1
+
+num_neither_ex2 = length(maf_object@clinical.data$Tumor_Sample_Barcode) - num_MUC16_only - num_RYR2_only - num_both_ex2
+```
+
+Create your contingency table:
+
+```{r}
+contig_ex1 <- matrix(c(num_both_ex1, 
+                         num_PIK3CA_only,
+                         num_TP53_only,
+                         num_neither_ex1), 
+                       nrow=2)
+contig_ex2 <- matrix(c(num_both_ex2, 
+                         num_MUC16_only,
+                         num_RYR2_only,
+                         num_neither_ex2), 
+                       nrow=2)
+
+# view the contingency table
+contig_ex1
+contig_ex2
+
+# view the contingency table as a mosaic
+mosaicplot(contig_ex1)
+mosaicplot(contig_ex2)
+```
+
+Run your Fisher exact test!
+
+```{r}
+fisher_test_ex1 <- fisher.test(contig_ex1)
+fisher_test_ex1
+
+fisher_test_ex2 <- fisher.test(contig_ex2)
+fisher_test_ex2
+```
+
+Are your mutations co-occurent or mutually exclusive?
+
+TP53 + PIK3CA: yes! they are dependent in some way; the odds ratio of 0.49 tells us they are mutually exclusive (but you don't need to know that because the next section will tell us this info in a much clearer way)
+MUC16 + RYR2: yes! they are dependent in some way; the odds ratio of 5.02 tells us they are co-occurent (but you don't need to know that because the next section will tell us this info in a much clearer way)
+
+###### (4) Maftools somaticInteractions()
+
+Luckily, we don't have to do the above work by hand for each gene pair we want to look at because maftools has a function that does it for us!
+
+Run somaticInteractions for your above genes by passing in a vector with your gene names into the genes argument.
+
+```{r}
+somaticInteractions(maf = maf_object,
+                    genes = c("TP53", "PIK3CA"),
+                    pvalue = c(0.05, 0.1)) ## these are the default p-value significance levels
+
+somaticInteractions(maf = maf_object,
+                    genes = c("MUC16", "RYR2"),
+                    pvalue = c(0.05, 0.1)) ## these are the default p-value significance levels
+
+## notice the $event column tells us if our mutations are co-occurent or mutually exclusive!
+```
+
+Run the following line of code for the top 25 genes.
+
+```{r}
+somaticInteractions(maf = maf_object,
+                    top = 25,
+                    pvalue = c(0.05, 0.1))
+```
+
+Pick a gene pair that is either significantly co-occurant or significantly mutually exclusive and look up the genes! Does this make sense? Do you see any literature that expresses similar/oppositional views on these genes?
+
